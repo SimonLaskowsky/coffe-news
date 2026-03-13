@@ -1,22 +1,25 @@
 import yfinance as yf
 
+TICKERS = {
+    'btc':    'BTC-USD',
+    'spx':    '^GSPC',
+    'gold':   'GC=F',
+    'oil':    'CL=F',
+    'eurusd': 'EURUSD=X',
+}
+
 def get_prices():
-    """Returns BTC and S&P 500 price data as a dict."""
-    try:
-        btc_hist = yf.Ticker('BTC-USD').history(period='1d')
-        btc_close = btc_hist['Close'].iloc[-1]
-        btc_change = ((btc_close - btc_hist['Open'].iloc[0]) / btc_hist['Open'].iloc[0]) * 100
-
-        spx_hist = yf.Ticker('^GSPC').history(period='1d')
-        spx_close = spx_hist['Close'].iloc[-1]
-        spx_change = ((spx_close - spx_hist['Open'].iloc[0]) / spx_hist['Open'].iloc[0]) * 100
-
-        return {
-            'btc': {'price': btc_close, 'change': btc_change},
-            'spx': {'price': spx_close, 'change': spx_change},
-        }
-    except Exception:
-        return {
-            'btc': {'price': None, 'change': None},
-            'spx': {'price': None, 'change': None},
-        }
+    result = {}
+    for key, ticker in TICKERS.items():
+        try:
+            hist = yf.Ticker(ticker).history(period='5d')
+            if len(hist) >= 1:
+                close = hist['Close'].iloc[-1]
+                open_ = hist['Open'].iloc[-1]
+                change = ((close - open_) / open_) * 100
+                result[key] = {'price': float(close), 'change': float(change)}
+            else:
+                result[key] = {'price': None, 'change': None}
+        except Exception:
+            result[key] = {'price': None, 'change': None}
+    return result
