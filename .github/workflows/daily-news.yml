@@ -1,0 +1,32 @@
+name: Daily Coffee News
+
+on:
+  schedule:
+    - cron: '0 8 * * *'   # 8:00 UTC = 9:00 CET (10:00 CEST in summer)
+  workflow_dispatch:        # allows manual trigger from GitHub UI
+
+jobs:
+  send-news:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Send daily news
+        run: python main.py daily
+        env:
+          NEWS_API_KEY:      ${{ secrets.NEWS_API_KEY }}
+          EMAIL:             ${{ secrets.EMAIL }}
+          PASSWORD:          ${{ secrets.PASSWORD }}
+          TO_EMAILS:         ${{ secrets.TO_EMAILS }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
