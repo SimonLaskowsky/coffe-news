@@ -33,7 +33,7 @@ def _chg_str(c):
     if c is None: return ''
     return f'{"+" if c >= 0 else ""}{c:.2f}%'
 
-def _price_cell(label, p, color, decimals=0):
+def _price_cell(label, p, decimals=0):
     price = p.get('price')
     change = p.get('change')
     ps = _price_str(price, decimals) if decimals else _price_str(price)
@@ -41,12 +41,13 @@ def _price_cell(label, p, color, decimals=0):
     cc = _chg_color(change)
     return f"""
 <td style="vertical-align:top; padding:4px;">
-  <div style="border:1px solid #3d2b1f; padding:12px 10px; text-align:center;">
-    <p style="font-family:Georgia,serif; font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:{color}; margin:0 0 6px;">{label}</p>
-    <p style="font-family:'Playfair Display',Georgia,serif; font-size:17px; font-weight:700; color:#fdf9f2; margin:0 0 3px;">{ps}</p>
+  <div style="border:1px solid #e8dcc8; border-top:2px solid #1a1209; padding:12px 10px; text-align:center; background:#fdf9f2;">
+    <p style="font-family:Georgia,serif; font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#8b7355; margin:0 0 6px;">{label}</p>
+    <p style="font-family:'Playfair Display',Georgia,serif; font-size:17px; font-weight:700; color:#1a1209; margin:0 0 3px;">{ps}</p>
     <p style="font-family:Georgia,serif; font-size:12px; font-weight:700; color:{cc}; margin:0;">{cs}</p>
   </div>
 </td>"""
+
 
 def _briefing_html(briefing):
     if not briefing:
@@ -108,7 +109,7 @@ def build_email(news_html, briefing, prices, crypto, stock):
   <title>The Coffee Post</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400&display=swap" rel="stylesheet">
 </head>
-<body style="margin:0; padding:0; background-color:#ede6d6; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+<body style="margin:0; padding:0; background-color:#f5f0e8; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
 <div style="max-width:600px; margin:0 auto; padding:24px 12px;">
 
   <!-- MASTHEAD -->
@@ -125,48 +126,48 @@ def build_email(news_html, briefing, prices, crypto, stock):
   </div>
 
   <!-- MARKET BAND -->
-  <div style="background:#1a1209; padding:20px 20px 18px;">
+  <div style="background:#fdf9f2; border:1px solid #e8dcc8; border-top:none; padding:20px 20px 18px;">
     <p style="font-family:Georgia,serif; font-size:9px; font-weight:700; letter-spacing:4px; text-transform:uppercase; color:#8b7355; margin:0 0 12px; text-align:center;">Today's Markets</p>
 
     <!-- Row 1: BTC + S&P -->
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;">
       <tr>
-        {_price_cell('Bitcoin',  btc,  '#c8920a')}
-        {_price_cell('S&amp;P 500', spx, '#60a5fa')}
+        {_price_cell('Bitcoin',  btc)}
+        {_price_cell('S&amp;P 500', spx)}
       </tr>
     </table>
 
     <!-- Row 2: Gold + Oil + EUR/USD -->
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:14px;">
       <tr>
-        {_price_cell('Gold',    gold,   '#d4af37')}
-        {_price_cell('Oil WTI', oil,    '#9ca3af', decimals=2)}
-        {_price_cell('EUR/USD', eurusd, '#86efac', decimals=4)}
+        {_price_cell('Gold',    gold)}
+        {_price_cell('Oil WTI', oil,    decimals=2)}
+        {_price_cell('EUR/USD', eurusd, decimals=4)}
       </tr>
     </table>
 
     <!-- Fear & Greed -->
-    <div style="border:1px solid #3d2b1f; padding:14px 16px;">
-      <p style="font-family:Georgia,serif; font-size:9px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#c8920a; margin:0 0 14px; text-align:center;">Fear &amp; Greed Index</p>
+    <div style="border:1px solid #e8dcc8; border-top:2px solid #1a1209; padding:14px 16px; background:#fdf9f2;">
+      <p style="font-family:Georgia,serif; font-size:9px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#8b7355; margin:0 0 14px; text-align:center;">Fear &amp; Greed Index</p>
       <div style="margin-bottom:12px;">
         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:5px;">
           <tr>
-            <td><span style="font-family:Georgia,serif; font-size:11px; color:#c8b89a;">Stocks</span></td>
+            <td><span style="font-family:Georgia,serif; font-size:11px; color:#5a4a3a;">Stocks</span></td>
             <td style="text-align:right;"><span style="font-family:Georgia,serif; font-size:11px; font-weight:700; color:{_fg_color(stock_val)};">{stock_val or 'N/A'}/100 &mdash; {stock.get('label','N/A')}</span></td>
           </tr>
         </table>
-        <div style="background:#3d2b1f; height:6px; border-radius:1px; overflow:hidden;">
+        <div style="background:#e8dcc8; height:6px; border-radius:1px; overflow:hidden;">
           <div style="background:{_fg_color(stock_val)}; height:6px; width:{stock_bar}%;"></div>
         </div>
       </div>
       <div>
         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:5px;">
           <tr>
-            <td><span style="font-family:Georgia,serif; font-size:11px; color:#c8b89a;">Crypto</span></td>
+            <td><span style="font-family:Georgia,serif; font-size:11px; color:#5a4a3a;">Crypto</span></td>
             <td style="text-align:right;"><span style="font-family:Georgia,serif; font-size:11px; font-weight:700; color:{_fg_color(crypto_val)};">{crypto_val or 'N/A'}/100 &mdash; {crypto.get('label','N/A')}</span></td>
           </tr>
         </table>
-        <div style="background:#3d2b1f; height:6px; border-radius:1px; overflow:hidden;">
+        <div style="background:#e8dcc8; height:6px; border-radius:1px; overflow:hidden;">
           <div style="background:{_fg_color(crypto_val)}; height:6px; width:{crypto_bar}%;"></div>
         </div>
       </div>
@@ -174,16 +175,16 @@ def build_email(news_html, briefing, prices, crypto, stock):
   </div>
 
   <!-- MORNING BRIEFING + NEWS -->
-  <div style="background:#ede6d6; padding:16px 4px 8px;">
+  <div style="background:#fdf9f2; border:1px solid #e8dcc8; border-top:none; padding:16px 4px 8px;">
     {briefing_block}
     {news_html}
   </div>
 
   <!-- FOOTER -->
-  <div style="background:#1a1209; border-top:3px solid #c8920a; padding:24px 28px; text-align:center;">
-    <p style="font-family:'Playfair Display',Georgia,serif; font-size:16px; color:#c8920a; margin:0 0 6px; font-style:italic;">The Coffee Post</p>
-    <p style="font-family:Georgia,serif; font-size:11px; color:#5a4a3a; margin:0 0 4px;">Powered by NewsAPI &amp; Claude AI</p>
-    <p style="font-family:Georgia,serif; font-size:10px; color:#3d2b1f; margin:0;">For informational purposes only &mdash; not financial advice.</p>
+  <div style="background:#fdf9f2; border:1px solid #e8dcc8; border-top:3px solid #1a1209; padding:24px 28px; text-align:center;">
+    <p style="font-family:'Playfair Display',Georgia,serif; font-size:16px; color:#1a1209; margin:0 0 6px; font-style:italic;">The Coffee Post</p>
+    <p style="font-family:Georgia,serif; font-size:11px; color:#8b7355; margin:0 0 4px;">Powered by Claude AI</p>
+    <p style="font-family:Georgia,serif; font-size:10px; color:#8b7355; margin:0;">For informational purposes only &mdash; not financial advice.</p>
   </div>
 
 </div>
