@@ -2,7 +2,7 @@ name: Daily Coffee News
 
 on:
   schedule:
-    - cron: '0 8 * * *'   # 8:00 UTC = 9:00 CET (10:00 CEST in summer)
+    - cron: '37 7 * * *'   # 7:37 UTC = ~8:37 CET / ~9:37 CEST — off-peak to reduce queue delay
   workflow_dispatch:        # allows manual trigger from GitHub UI
 
 jobs:
