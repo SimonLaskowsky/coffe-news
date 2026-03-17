@@ -32,8 +32,8 @@ def get_subscribers():
     print(f"  Subscribers: {len(emails)}")
     return emails or TO_EMAILS
 
-def send_email(message, html):
-    recipients = get_subscribers()
+def send_email(message, html, recipients=None):
+    recipients = recipients or get_subscribers()
     if not recipients:
         print("No recipients found.")
         return

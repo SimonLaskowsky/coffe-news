@@ -7,6 +7,7 @@ load_dotenv()
 
 from news import get_news, get_morning_briefing
 from email_sender import send_email
+from config import EMAIL
 from sentiment import get_crypto_sentiment, get_stock_sentiment
 from prices_getter import get_prices
 
@@ -193,8 +194,8 @@ def build_email(news_html, briefing, prices, crypto, stock):
 
 # ── runner ────────────────────────────────────────────────────────────────────
 
-def run_and_send():
-    print(f"Running {datetime.now()}")
+def run_and_send(test=False):
+    print(f"Running {datetime.now()}" + (" [TEST]" if test else ""))
     news_summary, news_html, articles = get_news()
     prices  = get_prices()
     crypto  = get_crypto_sentiment()
@@ -202,11 +203,57 @@ def run_and_send():
     briefing = get_morning_briefing(articles, prices, crypto, stock)
 
     html = build_email(news_html, briefing, prices, crypto, stock)
-    send_email(news_summary, html)
+    send_email(news_summary, html, recipients=[EMAIL] if test else None)
     print("Done.")
 
+def run_preview():
+    import tempfile, webbrowser
+    from news import _article_card, _section_header
+    mock_articles = [
+        {'title': 'Federal Reserve Holds Rates Steady Amid Inflation Concerns', 'description': 'The Federal Reserve kept interest rates unchanged at its latest meeting, signalling caution as inflation remains above the 2% target despite recent cooling in consumer prices.', 'url': '#', 'urlToImage': 'https://picsum.photos/seed/fed/600/190', 'source': {'name': 'Reuters'}},
+        {'title': 'S&P 500 Hits New Record High Driven by Tech Surge', 'description': 'The benchmark index climbed 1.4% to an all-time high, led by gains in semiconductor stocks after a stronger-than-expected earnings report from the sector.', 'url': '#', 'urlToImage': 'https://picsum.photos/seed/spx/600/190', 'source': {'name': 'CNBC'}},
+        {'title': 'Oil Prices Slip as OPEC Output Rises Faster Than Expected', 'description': 'Crude futures fell 2.1% after OPEC data showed member nations pumping above agreed quotas, adding supply pressure to a market already weighing demand uncertainty from China.', 'url': '#', 'urlToImage': 'https://picsum.photos/seed/oil/600/190', 'source': {'name': 'MarketWatch'}},
+        {'title': 'Tensions Escalate in South China Sea After Naval Incident', 'description': 'A confrontation between Chinese and Philippine vessels near disputed reefs has raised concerns among investors exposed to Asian markets, with risk-off sentiment spreading to regional currencies.', 'url': '#', 'urlToImage': 'https://picsum.photos/seed/geo/600/190', 'source': {'name': 'BBC World'}},
+        {'title': 'Germany Narrowly Avoids Recession as Factory Output Rebounds', 'description': 'Industrial production rose 0.8% in the latest month, beating forecasts and easing fears of a second consecutive quarterly contraction in Europe\'s largest economy.', 'url': '#', 'urlToImage': 'https://picsum.photos/seed/ger/600/190', 'source': {'name': 'The Guardian'}},
+    ]
+    mock_briefing = {
+        'big_picture': 'Risk appetite is cautiously positive as the Fed holds steady and tech earnings beat expectations, pushing SPX to 5,480 (+1.4%). Bond yields edged down 6bps to 4.31%, reflecting a soft-landing narrative. The main wildcard is oil — OPEC oversupply is capping energy stocks and pressuring CAD and NOK.',
+        'watch_list': [
+            'SPX at 5,480 (+1.4%) — momentum intact above 5,400 support; watch Friday CPI for continuation',
+            'Crude -2.1% to $78.40 — OPEC quota breach adds downside pressure; break of $77 targets $74',
+            'South China Sea — risk-off trigger if incident escalates; AUD and Asian EM FX most exposed',
+        ],
+        'posture': 'RISK-ON',
+        'posture_reason': 'SPX breakout + Fed pause + falling yields outweigh oil and geopolitical drag.',
+    }
+    mock_prices = {
+        'btc':    {'price': 68420, 'change': 2.3},
+        'spx':    {'price': 5480,  'change': 1.4},
+        'gold':   {'price': 2341,  'change': -0.3},
+        'oil':    {'price': 78.40, 'change': -2.1},
+        'eurusd': {'price': 1.0823,'change': 0.1},
+    }
+    mock_crypto = {'value': 62, 'label': 'Greed'}
+    mock_stock  = {'value': 71, 'label': 'Greed'}
+
+    news_html  = _section_header('◆', 'Markets &amp; Business', '#1e3a6e', '#1e3a6e')
+    news_html += ''.join(_article_card(a, 'Bullish — strong earnings momentum supports further upside.') for a in mock_articles[:3])
+    news_html += _section_header('◆', 'World Affairs', '#4a2d6b', '#4a2d6b')
+    news_html += ''.join(_article_card(a, 'Bearish — geopolitical risk adds volatility to regional assets.') for a in mock_articles[3:])
+
+    html = build_email(news_html, mock_briefing, mock_prices, mock_crypto, mock_stock)
+    with tempfile.NamedTemporaryFile('w', suffix='.html', delete=False) as f:
+        f.write(html)
+        path = f.name
+    webbrowser.open(f'file://{path}')
+    print(f"Preview opened: {path}")
+
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] in ("test", "daily"):
+    if len(sys.argv) > 1 and sys.argv[1] == "preview":
+        run_preview()
+    elif len(sys.argv) > 1 and sys.argv[1] == "test":
+        run_and_send(test=True)
+    elif len(sys.argv) > 1 and sys.argv[1] == "daily":
         run_and_send()
     else:
         schedule.every().day.at("09:00").do(run_and_send)
