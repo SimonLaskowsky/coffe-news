@@ -171,7 +171,7 @@ def _article_card(art, implication):
   {img_html}
   <div style="padding:20px 20px 16px;">
     {source_html}
-    <h2 style="font-family:Georgia,'Times New Roman',serif; font-size:19px; font-weight:700; color:#1a1209; margin:0 0 10px; line-height:1.35;">{title}</h2>
+    <h2 style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; font-size:18px; font-weight:600; color:#1a1209; margin:0 0 10px; line-height:1.35;">{title}</h2>
     <p style="font-family:Georgia,serif; font-size:14px; color:#4a3728; line-height:1.7; margin:0 0 16px;">{desc}</p>
     <div style="border-top:1px solid #e8dcc8; padding-top:14px; margin-bottom:4px;">
       <span style="background:{badge_bg}; color:{badge_color}; border:1px solid {badge_border}; font-size:10px; font-weight:700; padding:4px 12px; letter-spacing:1px; text-transform:uppercase;">{badge_label}</span>

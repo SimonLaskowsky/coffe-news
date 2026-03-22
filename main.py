@@ -37,15 +37,25 @@ def _chg_str(c):
 def _price_cell(label, p, decimals=0):
     price = p.get('price')
     change = p.get('change')
+    week_change = p.get('week_change')
+    month_change = p.get('month_change')
     ps = _price_str(price, decimals) if decimals else _price_str(price)
     cs = _chg_str(change)
     cc = _chg_color(change)
+    wc_str = f'w: {_chg_str(week_change)}' if week_change is not None else ''
+    mc_str = f'm: {_chg_str(month_change)}' if month_change is not None else ''
+    extra_parts = [x for x in [wc_str, mc_str] if x]
+    extra = (
+        f'<p style="font-family:Georgia,serif; font-size:9px; color:#8b7355; margin:4px 0 0;">'
+        + ' &nbsp;·&nbsp; '.join(extra_parts) + '</p>'
+    ) if extra_parts else ''
     return f"""
 <td style="vertical-align:top; padding:4px;">
   <div style="border:1px solid #e8dcc8; border-top:2px solid #1a1209; padding:12px 10px; text-align:center; background:#fdf9f2;">
     <p style="font-family:Georgia,serif; font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#8b7355; margin:0 0 6px;">{label}</p>
     <p style="font-family:'Playfair Display',Georgia,serif; font-size:17px; font-weight:700; color:#1a1209; margin:0 0 3px;">{ps}</p>
     <p style="font-family:Georgia,serif; font-size:12px; font-weight:700; color:{cc}; margin:0;">{cs}</p>
+    {extra}
   </div>
 </td>"""
 
@@ -227,11 +237,11 @@ def run_preview():
         'posture_reason': 'SPX breakout + Fed pause + falling yields outweigh oil and geopolitical drag.',
     }
     mock_prices = {
-        'btc':    {'price': 68420, 'change': 2.3},
-        'spx':    {'price': 5480,  'change': 1.4},
-        'gold':   {'price': 2341,  'change': -0.3},
-        'oil':    {'price': 78.40, 'change': -2.1},
-        'eurusd': {'price': 1.0823,'change': 0.1},
+        'btc':    {'price': 68420, 'change': 2.3,  'week_change': 5.1,  'month_change': -8.4},
+        'spx':    {'price': 5480,  'change': 1.4,  'week_change': 2.0,  'month_change': 3.7},
+        'gold':   {'price': 2341,  'change': -0.3, 'week_change': 1.2,  'month_change': 4.9},
+        'oil':    {'price': 78.40, 'change': -2.1, 'week_change': -3.5, 'month_change': -1.2},
+        'eurusd': {'price': 1.0823,'change': 0.1,  'week_change': -0.4, 'month_change': 0.8},
     }
     mock_crypto = {'value': 62, 'label': 'Greed'}
     mock_stock  = {'value': 71, 'label': 'Greed'}
@@ -256,8 +266,8 @@ if __name__ == "__main__":
     elif len(sys.argv) > 1 and sys.argv[1] == "daily":
         run_and_send()
     else:
-        schedule.every().day.at("09:00").do(run_and_send)
-        print("Running in background, waiting for 09:00...")
+        schedule.every().day.at("08:00").do(run_and_send)
+        print("Running in background, waiting for 08:00...")
         while True:
             schedule.run_pending()
             time.sleep(60)
