@@ -158,7 +158,7 @@ def _article_card(art, implication):
     badge_bg, badge_border, badge_color, badge_label = _sentiment_badge(implication)
 
     img_html = (
-        f'<img src="{image_url}" alt="" style="width:100%; height:190px; object-fit:cover; display:block;">'
+        f'<img src="{image_url}" alt="" style="width:100%; max-height:320px; object-fit:cover; display:block;">'
         if image_url else ''
     )
     source_html = (

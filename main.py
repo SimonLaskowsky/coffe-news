@@ -266,8 +266,8 @@ if __name__ == "__main__":
     elif len(sys.argv) > 1 and sys.argv[1] == "daily":
         run_and_send()
     else:
-        schedule.every().day.at("08:00").do(run_and_send)
-        print("Running in background, waiting for 08:00...")
+        schedule.every().day.at("07:00").do(run_and_send)
+        print("Running in background, waiting for 07:00...")
         while True:
             schedule.run_pending()
             time.sleep(60)
