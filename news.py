@@ -15,18 +15,77 @@ def _get_client():
 def _strip_html(text):
     return re.sub(r'<[^>]+>', '', text or '').strip()
 
+_IMG_EXT_RE = re.compile(r'\.(jpg|jpeg|png|webp)(\?|$)', re.I)
+
+def _upgrade_image_url(url):
+    if not url:
+        return url
+    # BBC ichef: /news/240/cpsprodpb/... -> /news/1024/
+    url = re.sub(r'(ichef\.bbci\.co\.uk/(?:news|live|images)/)\d+/', r'\g<1>1024/', url)
+    # Guardian i.guim.co.uk: width=NNN -> width=1200, drop dpr/quality
+    if 'guim.co.uk' in url:
+        url = re.sub(r'width=\d+', 'width=1200', url)
+        url = re.sub(r'quality=\d+', 'quality=85', url)
+        url = re.sub(r'dpr=\d+', 'dpr=2', url)
+    # CNBC: resize params in path like .../resize/770/... or query w=
+    url = re.sub(r'/resize/\d+/', '/resize/1200/', url)
+    # Yahoo s.yimg.com: /uu/api/res/1.2/<hash>/...--/<params>/ — bump fit/quality
+    if 's.yimg.com' in url:
+        url = re.sub(r'fit=fit-in&width=\d+', 'fit=fit-in&width=1200', url)
+    # Generic width/w query params
+    url = re.sub(r'([?&])(width|w)=\d+', r'\g<1>\g<2>=1200', url)
+    return url
+
+def _img_dims(d):
+    try:
+        return int(d.get('width') or 0), int(d.get('height') or 0)
+    except (ValueError, TypeError):
+        return 0, 0
+
 def _extract_image(entry):
+    candidates = []  # (width, url)
+
     if hasattr(entry, 'media_content') and entry.media_content:
         for m in entry.media_content:
-            if 'image' in m.get('type', ''):
-                return m.get('url', '')
+            url = m.get('url', '')
+            t = m.get('type', '') or ''
+            if not url:
+                continue
+            if t and 'image' not in t and not _IMG_EXT_RE.search(url):
+                continue
+            w, _ = _img_dims(m)
+            candidates.append((w, url))
+
     if hasattr(entry, 'media_thumbnail') and entry.media_thumbnail:
-        return entry.media_thumbnail[0].get('url', '')
+        for m in entry.media_thumbnail:
+            url = m.get('url', '')
+            if url:
+                w, _ = _img_dims(m)
+                candidates.append((w, url))
+
     if hasattr(entry, 'enclosures') and entry.enclosures:
         for enc in entry.enclosures:
-            if 'image' in enc.get('type', ''):
-                return enc.get('href', enc.get('url', ''))
-    return ''
+            t = enc.get('type', '') or ''
+            url = enc.get('href') or enc.get('url') or ''
+            if url and ('image' in t or _IMG_EXT_RE.search(url)):
+                candidates.append((0, url))
+
+    if not candidates:
+        for field in ('content', 'summary', 'description'):
+            val = entry.get(field) if hasattr(entry, 'get') else None
+            if isinstance(val, list):
+                val = ' '.join(v.get('value', '') for v in val if isinstance(v, dict))
+            if isinstance(val, str) and val:
+                m = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', val)
+                if m:
+                    candidates.append((0, m.group(1)))
+                    break
+
+    if not candidates:
+        return ''
+
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    return _upgrade_image_url(candidates[0][1])
 
 BUSINESS_FEEDS = [
     ('BBC Business',  'https://feeds.bbci.co.uk/news/business/rss.xml'),
@@ -104,7 +163,7 @@ def get_morning_briefing(articles, prices, crypto, stock):
         f"Crypto F&G {crypto.get('value','N/A')}/100 ({crypto.get('label','N/A')})"
     )
 
-    prompt = f"""You are a senior financial analyst. No filler, no soft language. Every sentence must contain a specific asset, number, or causal link.
+    prompt = f"""You are a senior financial analyst writing a punchy morning briefing. Be terse. No filler, no hedging, no run-on sentences. Every line names an asset, number, or causal link.
 
 HEADLINES:
 {headlines}
@@ -114,14 +173,14 @@ MARKET DATA:
 
 Reply with valid JSON only (no markdown wrapper):
 {{
-  "big_picture": "2-3 sentences: what is moving markets today, why, and what it means for the week. Name specific assets and use the market data numbers.",
+  "big_picture": "Max 2 short sentences (under 45 words total). State what's moving and why. No commas linking 3+ clauses.",
   "watch_list": [
-    "Asset/story — specific directional implication with a reason (e.g. 'Gold +1.2% — safe-haven bid as...')",
-    "Asset/story — specific directional implication with a reason",
-    "Asset/story — specific directional implication with a reason"
+    "Asset $price — one short directional take (max 18 words)",
+    "Asset $price — one short directional take (max 18 words)",
+    "Asset $price — one short directional take (max 18 words)"
   ],
   "posture": "RISK-ON",
-  "posture_reason": "One sentence with a specific data point supporting the posture"
+  "posture_reason": "One short sentence with one data point (max 20 words)"
 }}
 posture must be exactly: RISK-ON, RISK-OFF, or NEUTRAL"""
 
@@ -158,11 +217,15 @@ def _article_card(art, implication):
     badge_bg, badge_border, badge_color, badge_label = _sentiment_badge(implication)
 
     img_html = (
-        f'<img src="{image_url}" alt="" style="width:100%; max-height:320px; object-fit:cover; display:block;">'
+        f'<a href="{url}" style="display:block; text-decoration:none;">'
+        f'<img src="{image_url}" alt="" border="0" style="width:100%; max-height:320px; object-fit:cover; display:block; border:0; outline:none;">'
+        f'</a>'
         if image_url else ''
     )
     source_html = (
+        f'<a href="{url}" style="text-decoration:none; color:#8b7355;">'
         f'<p style="font-family:Georgia,serif; font-size:10px; font-weight:700; color:#8b7355; letter-spacing:2px; text-transform:uppercase; margin:0 0 8px;">{source}</p>'
+        f'</a>'
         if source else ''
     )
 
@@ -171,13 +234,14 @@ def _article_card(art, implication):
   {img_html}
   <div style="padding:20px 20px 16px;">
     {source_html}
-    <h2 style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; font-size:18px; font-weight:600; color:#1a1209; margin:0 0 10px; line-height:1.35;">{title}</h2>
-    <p style="font-family:Georgia,serif; font-size:14px; color:#4a3728; line-height:1.7; margin:0 0 16px;">{desc}</p>
+    <a href="{url}" style="text-decoration:none; color:#1a1209;">
+      <h2 style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; font-size:18px; font-weight:600; color:#1a1209; margin:0 0 10px; line-height:1.35;">{title}</h2>
+    </a>
+    <a href="{url}" style="text-decoration:none; color:#4a3728;">
+      <p style="font-family:Georgia,serif; font-size:14px; color:#4a3728; line-height:1.7; margin:0 0 16px;">{desc}</p>
+    </a>
     <div style="border-top:1px solid #e8dcc8; padding-top:14px; margin-bottom:4px;">
       <span style="background:{badge_bg}; color:{badge_color}; border:1px solid {badge_border}; font-size:10px; font-weight:700; padding:4px 12px; letter-spacing:1px; text-transform:uppercase;">{badge_label}</span>
-    </div>
-    <div style="padding-top:10px;">
-      <a href="{url}" style="font-family:Georgia,serif; font-size:12px; color:#6b3a2a; text-decoration:none; letter-spacing:0.5px; font-style:italic;">Read full story →</a>
     </div>
     <p style="font-family:Georgia,serif; font-size:12px; color:#7a6555; line-height:1.6; margin:10px 0 0; font-style:italic;">{implication}</p>
   </div>
